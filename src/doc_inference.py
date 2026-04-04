@@ -39,7 +39,7 @@ from ultralytics import YOLO
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
-DEFAULT_MODEL = "./yolo11n_best/best.pt"
+DEFAULT_MODEL = "./yolo11s_best/best.pt"
 DEFAULT_CONF  = 0.30
 DEFAULT_IOU   = 0.45
 LINE_COLOR_BGR = (0, 200, 80)   # single-class → one consistent green

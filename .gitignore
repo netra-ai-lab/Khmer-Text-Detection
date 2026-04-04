@@ -70,5 +70,6 @@ datasets_id/
 datasets_doc/
 mlruns/
 runs/
+test_sample/
 
 info.md
