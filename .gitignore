@@ -66,8 +66,8 @@ myenv/
 data/
 models/
 results/
-datasets/
-dataset/
+datasets_id/
+datasets_doc/
 mlruns/
 runs/
 
