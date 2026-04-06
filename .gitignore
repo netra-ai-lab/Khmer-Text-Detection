@@ -68,6 +68,7 @@ models/
 results/
 datasets_id/
 datasets_doc/
+datasets_doc_v2/
 mlruns/
 runs/
 test_sample/
