@@ -22,7 +22,7 @@ conf_threshold = st.sidebar.slider(
     help="Increase this to filter out low-confidence detections. Decrease to catch hard-to-read text."
 )
 
-st.title("📄 Multilingual Textline & Logo Extractor")
+st.title("Text and Image Detection")
 st.markdown("Upload a document, ID card, or scene image to detect text and extract graphical elements.")
 
 uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
