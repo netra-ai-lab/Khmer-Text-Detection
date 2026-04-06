@@ -73,4 +73,20 @@ mlruns/
 runs/
 test_sample/
 
+src/yolo11n_best/
+src/yolo11s_best/
+src/yolo11s_best_v2/
+src/yolo11s_best_v3/
+src/yolo11s_last_v3/
+src/yolo26s_best_v1/
+src/yolo26s_best_v1_2/
+src/yolo26s_best_v2/
+src/yolo26s_best_v3/
+src/yolo26s_best_v4/
+
+src/doc_inference.py
+src/inference.py
+src/visualize.py
+src/train_yolo_mlflow.py
+
 info.md
