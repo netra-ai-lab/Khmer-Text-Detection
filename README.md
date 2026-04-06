@@ -1,4 +1,21 @@
-# Multilingual Textline and Graphical Element Detection via End-to-End YOLO26
+<div align="center">
+  <img src="assets/netra.png" width="60%" alt="Netra Lab" />
+</div>
+<hr>
+
+<p align="center">
+ <a href="https://github.com/netra-ai-lab/Khmer-Text-Detection"><b>GitHub</b></a> |
+  <a href="https://huggingface.co/Darayut/khmer-text-recognition"><b>Model Download</b></a> |
+    <a href="https://huggingface.co/datasets/Darayut/Textline-Detection-Dataset"><b>Dataset Download</b></a> |
+    <a href="https://khmer-text-detection.streamlit.app/"><b>Inference Space</b></a> |
+</p>
+
+
+<h2>
+<p align="center">
+  <a href="">Multilingual Textline and Graphical Element Detection via End-to-End YOLO26</a>
+</p>
+
 
 ## Abstract
 This project presents a robust, dual-class object detection pipeline designed to localize dense multilingual textlines (Latin, and Non-Latin scripts) alongside graphical elements (logos, profile pictures, and charts). The methodology addresses the inherent challenges of domain shift between synthetic documents, noisy scanned layouts, and natural scene text. Furthermore, we propose a bootstrap pseudo-labeling pipeline to mitigate False Negative Poisoning (Missing Label Poisoning) caused by partially annotated external datasets. The final model is trained on the newly released YOLO26 architecture, leveraging its native NMS-free inference and MuSGD optimizer to achieve high-precision detection in computationally constrained environments.
