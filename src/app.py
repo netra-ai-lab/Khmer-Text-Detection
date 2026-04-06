@@ -4,12 +4,23 @@ from core import DocumentAnalyzer
 
 st.set_page_config(page_title="Document Analyzer", layout="wide")
 
-# Cache the model so it doesn't reload every time the user clicks a button
+# Cache the model
 @st.cache_resource
 def load_model():
     return DocumentAnalyzer()
 
 analyzer = load_model()
+
+# 👇 Added a Sidebar for Model Settings
+st.sidebar.title("⚙️ Model Settings")
+conf_threshold = st.sidebar.slider(
+    "Confidence Threshold", 
+    min_value=0.05, 
+    max_value=0.95, 
+    value=0.45, 
+    step=0.05,
+    help="Increase this to filter out low-confidence detections. Decrease to catch hard-to-read text."
+)
 
 st.title("📄 Multilingual Textline & Logo Extractor")
 st.markdown("Upload a document, ID card, or scene image to detect text and extract graphical elements.")
@@ -20,18 +31,18 @@ if uploaded_file is not None:
     # Read the image
     image = Image.open(uploaded_file).convert("RGB")
     
-    # Run Inference
+    # Run Inference using the slider value!
     with st.spinner("Analyzing document..."):
-        prediction = analyzer.predict(image)
+        prediction = analyzer.predict(image, conf_threshold=conf_threshold)
         
-    st.success(f"Found {len(prediction['detections'])} objects!")
+    st.success(f"Found {len(prediction['detections'])} objects at ≥ {conf_threshold} confidence!")
 
     # UI Layout: 2 Columns
     col1, col2 = st.columns([2, 1])
 
     with col1:
         st.subheader("Annotated Document")
-        # Convert BGR (OpenCV) back to RGB for Streamlit to display properly
+        # Convert BGR back to RGB for Streamlit
         rgb_annotated = prediction["annotated_image"][..., ::-1] 
         st.image(rgb_annotated, use_container_width=True)
 
@@ -48,4 +59,10 @@ if uploaded_file is not None:
             st.info("No logos or images found in this document.")
             
         st.subheader("Raw JSON Output")
-        st.json(prediction["detections"])
+        
+        # Wrapped the output to include the threshold used
+        st.json({
+            "confidence_threshold": conf_threshold,
+            "total_objects": len(prediction["detections"]),
+            "detections": prediction["detections"]
+        })

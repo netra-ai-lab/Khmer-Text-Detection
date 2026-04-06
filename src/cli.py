@@ -1,6 +1,6 @@
 import argparse
 import cv2
-import json 
+import json
 from pathlib import Path
 from PIL import Image
 from core import DocumentAnalyzer
@@ -8,8 +8,11 @@ from core import DocumentAnalyzer
 def main():
     parser = argparse.ArgumentParser(description="Parse documents for textlines and logos.")
     parser.add_argument("--image", type=str, required=True, help="Path to input image")
-    parser.add_argument("--model", type=str, default="yolo26s_best/best.pt")
+    parser.add_argument("--model", type=str, default="yolo26s_best/best.pt", help="Path to model weights")
     parser.add_argument("--output", type=str, default="output", help="Output directory")
+    
+    # 👇 Added the confidence threshold argument (default is 0.45)
+    parser.add_argument("--conf", type=float, default=0.45, help="Confidence threshold for detection (0.0 to 1.0)")
     args = parser.parse_args()
 
     # Create output dir
@@ -19,11 +22,13 @@ def main():
     print(f"Loading model... ({args.model})")
     analyzer = DocumentAnalyzer(model_path=args.model)
 
-    print(f"Analyzing {args.image}...")
+    print(f"Analyzing {args.image} with confidence threshold {args.conf}...")
     img = Image.open(args.image).convert("RGB")
-    prediction = analyzer.predict(img)
+    
+    # 👇 Pass the threshold dynamically to your core engine
+    prediction = analyzer.predict(img, conf_threshold=args.conf)
 
-    # 1. Save the annotated image (the one with boxes drawn on it)
+    # 1. Save the annotated image
     out_img_path = out_dir / f"annotated_{Path(args.image).name}"
     cv2.imwrite(str(out_img_path), prediction["annotated_image"])
     
@@ -36,11 +41,12 @@ def main():
             cropped_logo.save(crop_path)
 
     # 3. Save the results as a JSON file
-    image_stem = Path(args.image).stem  # gets "test_doc" from "test_doc.jpg"
+    image_stem = Path(args.image).stem  
     json_path = out_dir / f"{image_stem}_results.json"
     
     output_data = {
         "filename": Path(args.image).name,
+        "confidence_threshold": args.conf,  # <-- Logs the used threshold
         "total_objects": len(prediction["detections"]),
         "detections": prediction["detections"]
     }
@@ -54,4 +60,4 @@ def main():
 if __name__ == "__main__":
     main()
 
-    # python cli.py --image test_doc.jpg --output results/
+    # python cli.py --image test_doc.jpg --conf 0.70 --output results/
