@@ -32,8 +32,8 @@ The synthesis engine introduces high entropy across several parameters to ensure
 
 ### 2.2 External Dataset Integration
 To improve robustness against real-world artifacts (e.g., motion blur, sensor noise, varying illumination), the synthetic data was augmented with streaming datasets via the Hugging Face Hub:
-*   **DonkeySmall:** Natural scene text captured in diverse outdoor environments. This dataset introduces extreme variance in background noise, typography, and perspective distortion, preventing the model from overfitting to clean, flat document scans.
-*   **IBM DocLayNet:** Dense, complex document layouts (such as financial reports, patents, and scientific papers). This dataset provides high-fidelity, human-annotated ground truth for complex structural layouts, including critical `image` class entities like charts and pictures.
+*   **[DonkeySmall](https://huggingface.co/datasets/DonkeySmall/Yolo-Text-Detection):** Natural scene text captured in diverse outdoor environments. This dataset introduces extreme variance in background noise, typography, and perspective distortion, preventing the model from overfitting to clean, flat document scans.
+*   **[IBM DocLayNet](https://huggingface.co/datasets/docling-project/DocLayNet-v1.1):** Dense, complex document layouts (such as financial reports, patents, and scientific papers). This dataset provides high-fidelity, human-annotated ground truth for complex structural layouts, including critical `image` class entities like charts and pictures.
 
 <div align="center">
 <img src="./assets/donkey_small.jpeg" alt="Scene Text Example" height="250" style="margin: 5px; border: 1px solid #ccc; object-fit: cover;">
@@ -70,7 +70,7 @@ The training regimens for both phases were executed using the parameters detaile
 | **Base Weights** | `yolo26s.pt` | `best.pt` (from Phase 1) |
 | **Dataset** | PubLayNet + DonkeySmall (`mega`) | Phase 1 Data + Synthetic (`ultimate`) |
 | **Epochs** | 30 | 20 |
-| **Optimizer** | `MuSGB` | `AdamW` |
+| **Optimizer** | `MuSGD` | `AdamW` |
 | **Initial Learning Rate (`lr0`)** | `1.0e-03` | `5.0e-05` |
 | **Final LR Fraction (`lrf`)** | `0.01` | `0.01` |
 | **Batch Size** | 16 | 16 |
