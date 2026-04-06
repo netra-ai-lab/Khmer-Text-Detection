@@ -1,10 +1,18 @@
+import os
 from ultralytics import YOLO
 from PIL import Image
 import io
 
+# 1. Get the exact directory where core.py lives
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# 2. Build the absolute path to your model 
+# (This assumes yolo26s_best is sitting right next to core.py in the src folder)
+DEFAULT_MODEL_PATH = os.path.join(CURRENT_DIR, "yolo26s_best", "best.pt")
+
 class DocumentAnalyzer:
-    def __init__(self, model_path="yolo26s_best/best.pt"):
-        # Load the model once when the class is initialized
+    # 3. Use the dynamic path as the default!
+    def __init__(self, model_path=DEFAULT_MODEL_PATH):
         self.model = YOLO(model_path)
         self.names = self.model.names
 
