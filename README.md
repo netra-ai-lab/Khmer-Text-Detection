@@ -81,8 +81,6 @@ The training regimens for both phases were executed using the parameters detaile
 
 ---
 
-## 5. Performance Metrics and Evaluation
-
 ## 5. Results and Evaluation
 
 The final model was evaluated on the validation split of the Ultimate Dataset following the Phase 2 fine-tuning regimen. The rigorous two-phase training strategy, coupled with conservative learning rate modulation, successfully prevented catastrophic forgetting and yielded highly stable convergence.
