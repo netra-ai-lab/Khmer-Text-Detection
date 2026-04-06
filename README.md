@@ -181,7 +181,7 @@ for det in prediction["detections"]:
 For batch processing or shell scripting, use the included CLI tool. It will automatically parse the document and save cropped versions of any detected logos or profile pictures.
 
 ```bash
-python src/cli.py --image sample_document.jpg --output results/
+python src/cli.py --image sample_document.jpg --conf 0.25 --output results/
 ```
 
 ### 3. FastAPI Server
