@@ -3,7 +3,7 @@
 
 Pillow>=9.0.0           # image rendering and textbbox() support
 albumentations>=1.3.0   # photometric augmentation pipeline
-opencv-python>=4.6.0    # used by albumentations internally
+opencv-python-headless
 numpy>=1.23.0
 
 # --- upload_to_huggingface.py dependencies ---
