@@ -129,49 +129,88 @@ The trained model serves as a highly efficient upstream processor for OCR pipeli
 </div>
 
 ### 6.2 Python Inference Implementation
-The following script demonstrates how to deploy the YOLO26s model for document parsing, including the automated extraction and cropping of detected graphical elements.
+
+The model is wrapped in a production-ready suite of tools located in the `src/` directory. Ensure you have installed the required dependencies (`pip install ultralytics fastapi uvicorn streamlit pillow opencv-python`) before running the modules.
+
+---
+
+#### Detection Results Example
+```json
+{
+    "filename": "test_doc.jpg",
+    "total_objects": 2,
+    "detections":[
+        {
+            "class_id": 1,
+            "label": "image",
+            "confidence": 0.95,
+            "bbox":[10.5, 20.0, 150.0, 180.5]
+        },
+        {
+            "class_id": 0,
+            "label": "text_line",
+            "confidence": 0.89,
+            "bbox":[10.0, 200.0, 400.0, 220.0]
+        }
+    ]
+}
+```
+
+---
+
+#### 1. Python Native (Module Import)
+You can easily integrate the model into your own Python applications by importing the core engine.
 
 ```python
-import cv2
 from PIL import Image
-from ultralytics import YOLO
+from src.core import DocumentAnalyzer
 
-def parse_document(image_path: str, weights_path: str = "weights/yolo26s_ultimate_detector.pt"):
-    """
-    Executes YOLO26s inference for textline localization and graphical element extraction.
-    """
-    # Initialize YOLO26s model
-    model = YOLO(weights_path)
+# Initialize the analyzer
+analyzer = DocumentAnalyzer(model_path="src/yolo26s_best/best.pt")
 
-    # Execute inference; confidence threshold set to mitigate false positives
-    results = model.predict(source=image_path, conf=0.45, save=False)
-    
-    original_img = Image.open(image_path).convert("RGB")
-    extracted_images = 0
+# Run inference
+image = Image.open("document.jpg")
+prediction = analyzer.predict(image, conf_threshold=0.45)
 
-    for box in results[0].boxes:
-        class_id = int(box.cls[0])
-        confidence = float(box.conf[0])
-        
-        # Extract bounding box coordinates
-        x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
-        
-        if class_id == 0:
-            # Class 0: Textline 
-            # Coordinates can be routed to Tesseract/EasyOCR engines here.
-            pass
-            
-        elif class_id == 1:
-            # Class 1: Image / Logo
-            extracted_images += 1
-            print(f"Graphical element localized (Conf: {confidence:.2f}) at[{x1}, {y1}, {x2}, {y2}]")
-            
-            # Isolate and save the graphical element
-            cropped_asset = original_img.crop((x1, y1, x2, y2))
-            cropped_asset.save(f"extracted_asset_{extracted_images}.jpg")
-
-    print(f"Document parsing complete. Total graphical assets extracted: {extracted_images}")
-
-if __name__ == "__main__":
-    parse_document("datasets/test_samples/khmer_id_card.jpg")
+# Extract bounding boxes
+for det in prediction["detections"]:
+    print(f"{det['label']} found at {det['bbox']}")
 ```
+
+### 2. Command Line Interface (CLI)
+For batch processing or shell scripting, use the included CLI tool. It will automatically parse the document and save cropped versions of any detected logos or profile pictures.
+
+```bash
+python src/cli.py --image sample_document.jpg --output results/
+```
+
+### 3. FastAPI Server
+To deploy the model as a microservice, launch the FastAPI server. This allows other applications (or front-end clients) to submit images via HTTP POST requests and receive JSON bounding box coordinates.
+
+**Start the server:**
+```bash
+uvicorn src.api:app --host 0.0.0.0 --port 8000
+```
+**Test the endpoint:**
+Navigate to `http://localhost:8000/docs` in your browser to utilize the interactive Swagger UI and test the `/predict` endpoint.
+
+### 4. Streamlit Web UI
+For human-in-the-loop verification and demonstrations, a Streamlit web application is provided. It features a drag-and-drop interface, renders the annotated bounding boxes, and isolates extracted graphical assets.
+```bash
+streamlit run src/app.py
+```
+
+## Acknowledgements & Citation
+
+This project utilizes the **YOLO26** architecture developed by Ultralytics for end-to-end, NMS-free object detection. If you use this model or pipeline in your research, please consider citing their software:
+
+```bibtex
+@software{yolo26_ultralytics,
+  author = {Glenn Jocher and Jing Qiu},
+  title = {Ultralytics YOLO26},
+  version = {26.0.0},
+  year = {2026},
+  url = {https://github.com/ultralytics/ultralytics},
+  orcid = {0000-0001-5950-6979, 0000-0003-3783-7069},
+  license = {AGPL-3.0}
+}
