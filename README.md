@@ -1,231 +1,262 @@
 <div align="center">
-  <img src="assets/netra.png" width="60%" alt="Netra Lab" />
+  <img src="https://raw.githubusercontent.com/netra-ai-lab/Khmer-Text-Detection/master/assets/symbol.png" height="72" alt="Netra Lab" style="vertical-align: middle; margin-right: 24px;" />
+  <img src="https://raw.githubusercontent.com/netra-ai-lab/Khmer-Text-Detection/master/assets/wordmark-latin.png" height="56" alt="Netra" style="vertical-align: middle;" />
 </div>
+
 <hr>
 
 <p align="center">
- <a href="https://github.com/netra-ai-lab/Khmer-Text-Detection"><b>GitHub</b></a> |
-  <a href="https://huggingface.co/Darayut/khmer-text-recognition"><b>Model Download</b></a> |
-    <a href="https://huggingface.co/datasets/Darayut/Textline-Detection-Dataset"><b>Dataset Download</b></a> |
-    <a href="https://khmer-text-detection.streamlit.app/"><b>Inference Space</b></a> |
+  <a href="https://github.com/netra-ai-lab/Khmer-Text-Detection"><b>GitHub</b></a> |
+  <a href="https://github.com/netra-ai-lab/Khmer-Text-Detection/tree/master/src/yolo26s_best"><b>Model Download</b></a> |
+  <a href="https://huggingface.co/datasets/Darayut/Textline-Detection-Dataset"><b>Dataset Download</b></a> |
+  <a href="https://khmer-text-detection.streamlit.app/"><b>Inference Space</b></a> |
+  <a href="https://github.com/netra-ai-lab/Netra-OCR"><b>Netra-OCR</b></a>
 </p>
 
+<p align="center">
+  <img src="https://img.shields.io/badge/license-Apache--2.0-e75f1b?labelColor=4f2724" alt="License: Apache-2.0" />
+  <img src="https://img.shields.io/badge/weights-AGPL--3.0-e75f1b?labelColor=4f2724" alt="Weights: AGPL-3.0" />
+  <img src="https://img.shields.io/badge/params-9.9M-e75f1b?labelColor=4f2724" alt="9.9M parameters" />
+  <img src="https://img.shields.io/badge/mAP%400.50%3A0.95-0.900-e75f1b?labelColor=4f2724" alt="mAP@0.50:0.95 of 0.900" />
+</p>
 
 <h2>
 <p align="center">
-  <a href="">Multilingual Textline and Graphical Element Detection via End-to-End YOLO26</a>
+  Khmer Text Detection: Text Line and Picture Detection for Khmer and English Documents with YOLO26
+</p>
+</h2>
+
+<p align="center">
+  A page in, a box around every text line and every picture out. The line detector behind Netra OCR 1.
 </p>
 
+<p align="center">
+  <img src="assets/ID_annotated.jpg" height="300" alt="A sample ID card with a box around each line of text and around the photo" />
+  <img src="assets/invoice_2_annotated.jpg" height="300" alt="A photo of a printed invoice on a desk with a box around each line of text" />
+</p>
 
-## Abstract
-This project presents a robust, dual-class object detection pipeline designed to localize dense multilingual textlines (Latin, and Non-Latin scripts) alongside graphical elements (logos, profile pictures, and charts). The methodology addresses the inherent challenges of domain shift between synthetic documents, noisy scanned layouts, and natural scene text. Furthermore, we propose a bootstrap pseudo-labeling pipeline to mitigate False Negative Poisoning (Missing Label Poisoning) caused by partially annotated external datasets. The final model is trained on the newly released YOLO26 architecture, leveraging its native NMS-free inference and MuSGD optimizer to achieve high-precision detection in computationally constrained environments.
+<p align="center">
+  <em>The detector's output on a sample ID card and on a phone photo of a printed invoice. Each box is one text line or one picture, with the model's confidence.</em>
+</p>
 
----
+## 1. Abstract
 
-## 1. Introduction & Objectives
-Traditional Optical Character Recognition (OCR) systems struggle with complex document layouts and noisy scene text. An essential preprocessing step is accurate textline localization. 
+This repository presents Khmer Text Detection, a **9.9M-parameter** YOLO26s detector that finds two things on a page: text lines, in Khmer, Latin script or both, and pictures such as logos, seals, signatures, ID photos and charts. A text recogniser reads one line at a time, so this is the step that comes before it.
 
-The primary objective of this project is to develop a language-agnostic detection model capable of parsing highly variable document structures. The model is trained to classify two distinct targets:
-*   **Class 0 (`textline`):** Tightly packed lines of text across various scripts.
-*   **Class 1 (`image`):** Embedded graphical elements, such as logos, charts, and ID card profile photos.
+1. **Three kinds of data.** Photos of text in the street, document pages, and Khmer documents we generate ourselves, where every box is known exactly.
+2. **Two training phases.** The model first learns from the real images, then continues on all three sources together.
 
-## 2. Dataset Methodology
-To ensure model generalization, we constructed a large-scale hybrid dataset containing approximately 30,000 images, merging procedural synthetic data with real-world open-source datasets.
+On its validation set of 2,764 images the model scores **0.990 mAP@0.50** and **0.900 mAP@0.50:0.95**, with 97.2% precision and 96.2% recall. These are scores on the validation split of its own training data; there is no separate test set yet (see [Limitations](#8-limitations)).
 
-### 2.1 Procedural Synthetic Document Generation
-To capture the specific structural constraints inherent to formalized records and bureaucratic paperwork, we engineered a procedural data generation pipeline focused exclusively on synthetic document synthesis. The resulting dataset is publicly available on the Hugging Face Hub: [Darayut/khmer-textline-dataset](https://huggingface.co/datasets/Darayut/khmer-textline-dataset).
+It is the default line detector in [Netra-OCR](https://github.com/netra-ai-lab/Netra-OCR), which runs an ONNX export of this checkpoint.
 
-The synthesis engine introduces high entropy across several parameters to ensure model robustness:
-*   **Typographical and Dimensional Variance:** Integrated diverse custom font files to accurately render complex Khmer ligatures, varying font weights, and spacing. Furthermore, the pipeline dynamically renders documents across a wide spectrum of image dimensions and aspect ratios.
-*   **Spatial and Layout Randomization:** Programmatically generated diverse structural layouts to simulate real-world variance, ranging from dense multi-column layouts to sparse, centralized text configurations.
-*   **Asset Injection:** Randomly embedded non-textual graphical objects—specifically institutional logos, official stamps, and signatures—onto varied background textures. The generation script automatically extracts mathematically precise ground-truth bounding box coordinates for both the `textline` and `image` classes.
+## 2. Dataset
 
-<div align="center">
-  <img src="./assets/synth_doc_1.png" alt="Synthetic Document Example 1" width="250" style="margin: 5px; border: 1px solid #ccc;">
-  <img src="./assets/synth_doc_2.png" alt="Synthetic Document Example 2" width="250" style="margin: 5px; border: 1px solid #ccc;">
-  <img src="./assets/synth_doc_3.png" alt="Synthetic Document Example 3" width="250" style="margin: 5px; border: 1px solid #ccc;">
-  <p><em>Figure 1: Procedurally generated synthetic Khmer documents. Note the variance in paragraph density, structural layout, and the injection of stamps, logos, and signatures.</em></p>
-</div>
+Khmer Text Detection was trained on 30,658 images from three sources, with 2,764 more held out for validation. The combined set is published as [Darayut/Textline-Detection-Dataset](https://huggingface.co/datasets/Darayut/Textline-Detection-Dataset), with a `source` column that says where each image came from.
 
-### 2.2 External Dataset Integration
-To improve robustness against real-world artifacts (e.g., motion blur, sensor noise, varying illumination), the synthetic data was augmented with streaming datasets via the Hugging Face Hub:
-*   **[DonkeySmall](https://huggingface.co/datasets/DonkeySmall/Yolo-Text-Detection):** Natural scene text captured in diverse outdoor environments. This dataset introduces extreme variance in background noise, typography, and perspective distortion, preventing the model from overfitting to clean, flat document scans.
-*   **[IBM DocLayNet](https://huggingface.co/datasets/docling-project/DocLayNet-v1.1):** Dense, complex document layouts (such as financial reports, patents, and scientific papers). This dataset provides high-fidelity, human-annotated ground truth for complex structural layouts, including critical `image` class entities like charts and pictures.
+### Sources
 
-<div align="center">
-<img src="./assets/donkey_small.jpeg" alt="Scene Text Example" height="250" style="margin: 5px; border: 1px solid #ccc; object-fit: cover;">
-<img src="./assets/doclay_net.png" alt="Document Layout Example" height="250" style="margin: 5px; border: 1px solid #ccc; object-fit: cover;">
-<p><em>Figure 2: Examples of external integration domains. Left: Natural scene text representing extreme environmental variance and distortion. Right: Structured document layouts illustrating dense topological elements and multi-column formatting.</em></p>
-</div>
-
----
-
-## 3. Model Architecture: YOLO26
-This project utilizes **YOLO26s** (released early 2026 by Ultralytics), which introduces several architectural paradigm shifts that are particularly advantageous for dense text detection.
-
-*   **End-to-End NMS-Free Inference:** Previous YOLO iterations relied heavily on Non-Maximum Suppression (NMS), which frequently suppresses overlapping or tightly stacked textlines. YOLO26 outputs predictions directly without NMS, drastically reducing latency while preserving recall in dense regions.
-*   **Small-Target-Aware Label Assignment (STAL):** Enhances the model's sensitivity to extremely small bounding boxes, a critical requirement for localizing distant scene text or micro-printing on ID cards.
-*   **MuSGD Optimizer:** YOLO26 introduces MuSGD, a hybrid optimizer inspired by Kimi's Muon optimizer. It blends the generalization capabilities of SGD with momentum/curvature behaviors, allowing for stable convergence during multi-domain fine-tuning.
-
-## 4. Training Strategy
-
-To effectively bridge the domain gap between natural scene text, standardized document layouts, and our targeted synthetic Khmer documents, a two-phase sequential training paradigm was employed. This approach establishes robust, generalized feature representations before specializing the model on procedural layouts, strictly controlling learning rates to prevent catastrophic forgetting.
-
-### 4.1 Phase 1: Domain-Specific Foundation Pretraining
-The initial phase focused on establishing the base dual-class feature extraction head (`textline` and `image`). The model was initialized with official `yolo26s.pt` COCO weights and trained exclusively on the **Mega Dataset** (comprising DonkeySmall scene text and PubLayNet complex document layouts). Training utilized an initial learning rate of `0.001` over 30 epochs. This allowed the model to construct generalized representations of text topology and graphical elements across highly diverse, real-world environments without being biased by synthetic procedural generation.
-
-### 4.2 Phase 2: Synthetic Integration and Fine-Tuning
-In the second phase, the model was fine-tuned on the **Ultimate Dataset**, which concatenated the Phase 1 data with the newly generated, perfectly annotated synthetic Khmer documents. To prevent the new synthetic gradients from overwriting the established representations (a phenomenon known as "optimizer shock"), the learning rate was aggressively reduced by a factor of 20 (from `1e-3` to `5e-05`). The adaptive AdamW optimizer was utilized to dynamically scale learning rates per-parameter, ensuring stable convergence and maximum retention of previously learned domains.
-
-### 4.3 Hyperparameter Configuration
-The training regimens for both phases were executed using the parameters detailed in Table 1. Spatial augmentations (e.g., rotation, shear, perspective) were intentionally disabled (`0.0`) to preserve the tight bounding-box integrity required for dense textline localization, while photometric and mosaic augmentations were heavily utilized to simulate scan degradation and scale variance.
-
-*Table 1: YOLO26s Training and Fine-Tuning Hyperparameters*
-
-| Parameter | Phase 1 (Foundation Pretraining) | Phase 2 (Synthetic Fine-Tuning) |
+| Dataset | Type | What it adds |
 | :--- | :--- | :--- |
-| **Base Weights** | `yolo26s.pt` | `best.pt` (from Phase 1) |
-| **Dataset** | PubLayNet + DonkeySmall (`mega`) | Phase 1 Data + Synthetic (`ultimate`) |
-| **Epochs** | 30 | 20 |
-| **Optimizer** | `MuSGD` | `AdamW` |
-| **Initial Learning Rate (`lr0`)** | `1.0e-03` | `5.0e-05` |
-| **Final LR Fraction (`lrf`)** | `0.01` | `0.01` |
-| **Batch Size** | 16 | 16 |
-| **Image Size (`imgsz`)** | 640 | 640 |
-| **Mosaic Augmentation** | 1.0 | 1.0 |
-| **Photometric Augmentation** | HSV (h: 0.015, s: 0.7, v: 0.4) | HSV (h: 0.015, s: 0.7, v: 0.4) |
-| **Spatial Augmentation** | Disabled (0.0) | Disabled (0.0) |
+| [DonkeySmall/Yolo-Text-Detection](https://huggingface.co/datasets/DonkeySmall/Yolo-Text-Detection) | Scene text photos | Signs, shopfronts and billboards: blur, glare, odd angles and busy backgrounds |
+| [DocLayNet v1.1](https://huggingface.co/datasets/docling-project/DocLayNet-v1.1) | Document pages | Reports, manuals and papers with dense columns, charts and pictures, relabelled to the two classes |
+| Synthetic Khmer documents | Generated pages | Khmer letters, notices and memos with stamps, logos and signatures, and exact labels |
 
----
+| Split | Images |
+| :--- | ---: |
+| Train | 30,658 |
+| Validation | 2,764 |
+| **Total** | **33,422** |
 
-## 5. Results and Evaluation
+The two classes:
 
-The final model was evaluated on the validation split of the Ultimate Dataset following the Phase 2 fine-tuning regimen. The rigorous two-phase training strategy, coupled with conservative learning rate modulation, successfully prevented catastrophic forgetting and yielded highly stable convergence.
+| ID | Name | What it is |
+| ---: | :--- | :--- |
+| 0 | `textline` | One line of text, in any script |
+| 1 | `image` | A picture on the page: a logo, seal, signature, photo or chart |
 
-### 5.1 Quantitative Performance Metrics
-By Epoch 20 of Phase 2, the model demonstrated exceptional localization precision and recall across both the `textline` and `image` classes. The bounding box regression loss (`val/box_loss`) exhibited a smooth, monotonic decrease without any indications of overfitting, validating the efficacy of the photometric augmentations and adaptive AdamW optimization. 
+### Synthetic documents
 
-**Final Validation Metrics (Epoch 20):**
-*   **Precision (P):** 0.9715
-*   **Recall (R):** 0.9624
-*   **mAP@0.50:** **0.9898**
-*   **mAP@0.50:0.95:** **0.9000**
+No public dataset has Khmer official documents with a box around every line, so the repo generates them.
 
-The remarkably high mAP@0.50:0.95 score (90.0%) highlights the model's spatial accuracy. In dense document parsing, high Intersection-over-Union (IoU) thresholds are notoriously difficult to satisfy; a 90% mAP across the strict 0.50 to 0.95 interval indicates that the predicted bounding boxes tightly encapsulate the text lines and graphical elements with minimal pixel variance.
+1. **Layout.** `src/synthetic_doc_generation/generate_doc_lines.py` lays out a page from the Khmer corpus in `texts/`, in one of 8 templates (letter, announcement, report, memo, two-column and others) and one of 12 page sizes, using the fonts in `fonts/`.
+2. **Pictures.** Logos, seals, stamps and signatures from `objects/` are pasted onto the page and labelled as `image`.
+3. **Degradation.** The page is blurred, shadowed, folded, given noise and saved as a JPEG, the way a scan or a phone photo would be.
+4. **Labels.** The generator places each line itself, so it writes the exact box for each one in YOLO format. No one draws boxes by hand.
 
-### 5.2 Convergence Analysis
-The fine-tuning phase successfully assimilated the synthetic Khmer procedural data while maintaining previous domain knowledge. As illustrated in the training plots, the model achieved a rapid stabilization of mAP metrics by Epoch 6, followed by steady micro-optimizations of the bounding box tightness through Epoch 20. 
+<p align="center">
+  <img src="assets/synth_doc_1.png" height="330" alt="A generated Khmer notice with a red box around each text line" />
+  <img src="assets/synth_doc_3.png" height="330" alt="A generated page of Khmer body text with a red box around each line and blue boxes around a signature and a crest" />
+</p>
 
-<div align="center">
-<img src="./assets/training_metrics_phase2.png" alt="Phase 2 Results" height="250" style="margin: 5px; border: 1px solid #ccc; object-fit: cover;">
-<p><em>Figure 3: Performance results of phase 2 finetuning.</em></p>
-</div>
+<p><em>Figure 1: Two generated Khmer documents with their labels drawn on. Red boxes are text lines; blue boxes are pictures.</em></p>
 
-### YOLO26 Official Performance Benchmarks
-Below is the reference performance plot from the Ultralytics YOLO26 release, illustrating the latency vs. mAP trade-off improvements achieved by the NMS-free architecture.
+A first set of 2,300 generated pages, labelled for text lines only, is published on its own as [Darayut/khmer-textline-dataset](https://huggingface.co/datasets/Darayut/khmer-textline-dataset). `src/synthetic_id_generation/` holds a second generator, for synthetic Khmer ID cards.
 
-<div align="center">
-  <!-- PLACEHOLDER FOR YOLO26 PLOT -->
-  <img src="./assets/Ultralytics-YOLO26-Benchmark.jpg" alt="Ultralytics YOLO26 Performance Benchmark Plot" width="600">
-  <p><em>Figure 4: YOLO26 Parameter/Latency vs. mAP Trade-off (Source: Ultralytics)</em></p>
-</div>
-
----
-
-## 6. Model Inference and Application
-The trained model serves as a highly efficient upstream processor for OCR pipelines and data extraction engines.
-
-### 6.1 Qualitative Results
-<div align="center">
-  <!-- PLACEHOLDER FOR INFERENCE IMAGES -->
-  <img src="./assets/ID_annotated.jpg" alt="Inference on Document" width="400">
-  <img src="./assets/invoice_2_annotated.jpg" alt="Inference on Scene Text" width="400">
-  <p><em>Figure 2: Model inference demonstrating successful localization of Khmer textlines (Class 0) and images (Class 1).</em></p>
-</div>
-
-### 6.2 Python Inference Implementation
-
-The model is wrapped in a production-ready suite of tools located in the `src/` directory. Ensure you have installed the required dependencies (`pip install ultralytics fastapi uvicorn streamlit pillow opencv-python`) before running the modules.
-
----
-
-#### Detection Results Example
-```json
-{
-    "filename": "test_doc.jpg",
-    "total_objects": 2,
-    "detections":[
-        {
-            "class_id": 1,
-            "label": "image",
-            "confidence": 0.95,
-            "bbox":[10.5, 20.0, 150.0, 180.5]
-        },
-        {
-            "class_id": 0,
-            "label": "text_line",
-            "confidence": 0.89,
-            "bbox":[10.0, 200.0, 400.0, 220.0]
-        }
-    ]
-}
+```bash
+pip install -r requirements.txt
+python src/synthetic_doc_generation/generate_doc_lines.py --count 200 --seed 42   # writes ./datasets
 ```
 
----
+## 3. Model Architecture
 
-#### 1. Python Native (Module Import)
-You can easily integrate the model into your own Python applications by importing the core engine.
+**The base model.** [YOLO26s](https://github.com/ultralytics/ultralytics), the small size of Ultralytics' YOLO26, with its output layer retrained for the two classes.
+
+- **One box per object.** YOLO26 is trained with a one-to-one head, so it can give a single box per object without non-maximum suppression. That matters for text: lines sit directly above and below each other, and suppression can delete a real line whose box touches its neighbour's.
+- **Small targets.** Its label assignment is built to keep very small boxes in training, such as fine print or a distant sign.
+- **Three scales.** Boxes are predicted at strides 8, 16 and 32, so small text and large pictures are found by different grids.
+
+| Feature | Detail |
+| :--- | :--- |
+| Base model | YOLO26s (Ultralytics) |
+| Total parameters | 9,949,412 |
+| Input | Long side resized to 640 px |
+| Output scales | Strides 8, 16 and 32 |
+| Classes | `textline`, `image` |
+| Checkpoint | `src/yolo26s_best/best.pt`, 20 MB |
+
+## 4. Training
+
+Training ran in two phases. The first teaches the model what text and pictures look like in real images. The second adds the generated Khmer pages.
+
+| Hyperparameter | Phase 1 | Phase 2 |
+| :--- | :--- | :--- |
+| Starts from | `yolo26s.pt` (COCO) | Best of phase 1 |
+| Data | Scene text, DocLayNet | Scene text, DocLayNet, synthetic Khmer |
+| Epochs | 30 | 20 |
+| Optimiser | MuSGD | AdamW |
+| Batch size | 16 | 16 |
+| Image size | 640 | 640 |
+| Mosaic | 1.0 | 1.0, off for the last 10 epochs |
+| Colour jitter (HSV) | 0.015, 0.7, 0.4 | 0.015, 0.7, 0.4 |
+| Shift, rescale | 0.1, 0.5 | 0.1, 0.5 |
+| Rotation, shear, perspective, flips | Off | Off |
+
+Rotation, shear, perspective and flips are off because a text line is a thin horizontal box, and a rotated line no longer fits one. The phase 2 settings are in `src/yolo26s_best/args.yaml`.
+
+> **The phase 2 learning rate is not the one in `args.yaml`.** The file asks for `lr0: 5.0e-05`, but `optimizer` was left on `auto`, and in that mode Ultralytics picks the optimiser and its learning rate itself and ignores `lr0`. The log stored in the checkpoint shows what was applied: AdamW, warming up over three epochs to 0.0015, then falling in a straight line to 0.0001.
+
+## 5. Evaluation
+
+Scores are on the validation split (2,764 images), measured by Ultralytics after the last epoch of phase 2.
+
+| Metric | Score |
+| :--- | ---: |
+| Precision | 0.9715 |
+| Recall | 0.9625 |
+| mAP@0.50 | 0.9899 |
+| **mAP@0.50:0.95** | **0.9000** |
+
+<p align="center">
+  <img src="assets/training.png" width="560" alt="Line chart of validation scores over the 20 epochs of phase 2. mAP@0.50 rises from 0.898 to 0.990 and is flat after epoch 6. mAP@0.50:0.95 rises from 0.724 to 0.900 and is still rising at the end." />
+</p>
+
+<p><em>Figure 2: Validation scores after each epoch of phase 2. The model finds almost every box early (mAP@0.50, grey); what keeps improving is how tightly the boxes fit (mAP@0.50:0.95, orange). Drawn by <code>assets/make_figures.py</code> from the log stored in the checkpoint.</em></p>
+
+- **Scoring.** mAP@0.50 counts a box as right when it overlaps the true box by at least half. mAP@0.50:0.95 averages over stricter overlaps up to 95%, so it rewards tight boxes. For OCR the strict score matters more: a box that clips the top of a line cuts off Khmer vowel signs.
+- **What the validation set holds.** 2,518 scene photos and 246 synthetic pages, and no DocLayNet pages.
+
+## 6. Install
+
+```bash
+git clone https://github.com/netra-ai-lab/Khmer-Text-Detection
+cd Khmer-Text-Detection
+pip install ultralytics pillow opencv-python-headless
+```
+
+| For | Also install |
+| --- | --- |
+| The REST API | `fastapi uvicorn python-multipart` |
+| The web app | `streamlit` |
+| Generating data and training | `pip install -r requirements.txt` |
+
+The weights are in the repo (`src/yolo26s_best/best.pt`, 20 MB), so nothing is downloaded on first run. The CPU is enough, and CUDA is used when available.
+
+## 7. Usage
+
+**Python.** Create the analyzer once and reuse it.
 
 ```python
 from PIL import Image
 from src.core import DocumentAnalyzer
 
-# Initialize the analyzer
-analyzer = DocumentAnalyzer(model_path="src/yolo26s_best/best.pt")
+analyzer = DocumentAnalyzer()
+result = analyzer.predict(Image.open("page.jpg"), conf_threshold=0.45)
 
-# Run inference
-image = Image.open("document.jpg")
-prediction = analyzer.predict(image, conf_threshold=0.45)
-
-# Extract bounding boxes
-for det in prediction["detections"]:
-    print(f"{det['label']} found at {det['bbox']}")
+for box in result["detections"]:
+    print(box["label"], box["confidence"], box["bbox"])   # bbox is [x1, y1, x2, y2] in pixels
 ```
 
-### 2. Command Line Interface (CLI)
-For batch processing or shell scripting, use the included CLI tool. It will automatically parse the document and save cropped versions of any detected logos or profile pictures.
+**Command line.** Writes the page with its boxes drawn on, a JSON file of the boxes, and a crop of every picture.
 
 ```bash
-python src/cli.py --image sample_document.jpg --conf 0.25 --output results/
+python src/cli.py --image page.jpg --model src/yolo26s_best/best.pt --output results/
+python src/cli.py --image page.jpg --model src/yolo26s_best/best.pt --conf 0.25 --output results/   # finds more, lets in more mistakes
 ```
 
-### 3. FastAPI Server
-To deploy the model as a microservice, launch the FastAPI server. This allows other applications (or front-end clients) to submit images via HTTP POST requests and receive JSON bounding box coordinates.
-
-**Start the server:**
-```bash
-uvicorn src.api:app --host 0.0.0.0 --port 8000
+```json
+{
+    "filename": "test_doc.jpg",
+    "confidence_threshold": 0.45,
+    "total_objects": 31,
+    "detections": [
+        {
+            "class_id": 0,
+            "label": "textline",
+            "confidence": 0.9241346716880798,
+            "bbox": [202.84, 42.06, 337.17, 63.55]
+        }
+    ]
+}
 ```
-**Test the endpoint:**
-Navigate to `http://localhost:8000/docs` in your browser to utilize the interactive Swagger UI and test the `/predict` endpoint.
 
-### 4. Streamlit Web UI
-For human-in-the-loop verification and demonstrations, a Streamlit web application is provided. It features a drag-and-drop interface, renders the annotated bounding boxes, and isolates extracted graphical assets.
+**Web app.** Drop in an image, move the confidence slider, see the boxes. Also hosted as the [demo](https://khmer-text-detection.streamlit.app/).
+
 ```bash
 streamlit run src/app.py
 ```
 
-## Acknowledgements & Citation
+**REST API.** `POST /predict` takes an image file and an optional `conf`, and returns the same JSON as the command line. Run it from `src/`; the interactive docs are at `http://localhost:8000/docs`.
 
-This project utilizes the **YOLO26** architecture developed by Ultralytics for end-to-end, NMS-free object detection. If you use this model or pipeline in your research, please consider citing their software:
+```bash
+cd src
+uvicorn api:app --host 0.0.0.0 --port 8000
+curl -F "file=@../page.jpg" -F "conf=0.45" http://localhost:8000/predict
+```
 
-```bibtex
-@software{yolo26_ultralytics,
-  author = {Glenn Jocher and Jing Qiu},
-  title = {Ultralytics YOLO26},
-  version = {26.0.0},
-  year = {2026},
-  url = {https://github.com/ultralytics/ultralytics},
-  orcid = {0000-0001-5950-6979, 0000-0003-3783-7069},
-  license = {AGPL-3.0}
-}
+**In Netra-OCR.** To go from a page to text, use [Netra-OCR](https://github.com/netra-ai-lab/Netra-OCR), which runs this detector and then reads each line:
+
+```python
+from netra_ocr import KhmerOCRPipeline
+
+pipeline = KhmerOCRPipeline(detector="yolo", decoder="blockwise")
+```
+
+**Training.** `kaggle_train_yolo11.ipynb` is the notebook from the first, single-class experiment on the synthetic set. The two-phase run that produced the released checkpoint is described in [Training](#4-training); its script is not in this repo.
+
+## 8. Limitations
+
+- **One validation set.** Every score comes from the validation split of the model's own training data, which is mostly scene photos. There is no separate test set and no comparison with another detector.
+- **Real Khmer documents are unmeasured.** The Khmer documents in training are generated. How well the model does on real scans has not been scored.
+- **Upright boxes.** Boxes are not rotated, and rotation was off in training. On a page photographed at an angle, a box takes in parts of the lines above and below.
+- **Imperfect labels.** The scene-text labels are semi-automatic and miss some text, so the model can learn to miss it too.
+- **Lines only.** The model does not group lines into paragraphs or give a reading order. Netra-OCR uses a separate layout model for that.
+
+## 9. Licensing
+
+This project's code is released under the Apache License 2.0 (see [LICENSE](LICENSE)).
+- **Weights:** AGPL-3.0, because they were trained with [Ultralytics YOLO](https://github.com/ultralytics/ultralytics). Read that licence before you ship the weights in a product or run a modified version as a service.
+- **Training data:** the combined set is CC BY 4.0 and the synthetic set is MIT, per their dataset cards. DonkeySmall is MIT. DocLayNet has its own licence terms; see its dataset card.
+- **Fonts and images:** the files in `fonts/`, `objects/` and `backgrounds/` are there for the generator and keep their own licences. <!-- TODO: list the licence of each font family and image source. -->
+
+## References
+
+1. **Ultralytics YOLO26**  
+   *Glenn Jocher, Jing Qiu.*  
+   Software, version 26.0.0, 2026. AGPL-3.0.  
+   [github.com/ultralytics/ultralytics](https://github.com/ultralytics/ultralytics)
+
+2. **DocLayNet: A Large Human-Annotated Dataset for Document-Layout Analysis**  
+   *Birgit Pfitzmann, Christoph Auer, Michele Dolfi, Ahmed S. Nassar, Peter Staar.*  
+   KDD 2022.  
+   [arXiv:2206.01062](https://arxiv.org/abs/2206.01062)
