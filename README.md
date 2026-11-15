@@ -102,7 +102,7 @@ python src/synthetic_doc_generation/generate_doc_lines.py --count 200 --seed 42 
 
 **The base model.** [YOLO26s](https://github.com/ultralytics/ultralytics), the small size of Ultralytics' YOLO26, with its output layer retrained for the two classes.
 
-- **One box per object.** YOLO26 is trained with a one-to-one head, so it can give a single box per object without non-maximum suppression. That matters for text: lines sit directly above and below each other, and suppression can delete a real line whose box touches its neighbour's.
+- **One box per object.** YOLO26 is trained with a one-to-one head, so it can give a single box per object without non-maximum suppression. That matters for text: lines sit directly above and below each other, and suppression can delete a real line whose box touches its neighbour's. The checkpoint holds both heads. With Ultralytics 8.4.194 it runs the one-to-many head with suppression by default; pass `end2end=True` to `model.predict` to use the one-to-one head. On our test page both gave the same 31 boxes.
 - **Small targets.** Its label assignment is built to keep very small boxes in training, such as fine print or a distant sign.
 - **Three scales.** Boxes are predicted at strides 8, 16 and 32, so small text and large pictures are found by different grids.
 
